@@ -6,6 +6,7 @@ import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
 import { IconPicker } from './ui/IconPicker'
+import { Icon } from './ui/icons'
 import { cn } from '../lib/cn'
 import { formatBRL } from '../lib/format'
 import { uid } from '../lib/id'
@@ -80,7 +81,7 @@ export function CartoesCard({ className }: { className?: string }) {
             <li key={c.id} className="rounded-xl border border-border bg-surface-2 p-3">
               <div className="mb-2 flex items-center justify-between">
                 <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold">
-                  <span>{c.icone || '💳'}</span>
+                  <Icon name={c.icone || 'credit-card'} size={18} className="shrink-0" />
                   {c.nome}
                 </p>
                 <button

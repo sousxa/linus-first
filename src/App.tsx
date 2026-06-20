@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Cloud, Lock } from 'lucide-react'
 import { Header } from './components/Header'
 import { LockScreen } from './components/LockScreen'
 import { Dashboard } from './components/Dashboard'
@@ -21,10 +22,10 @@ function Shell() {
                 aria-label="Sincronizar"
                 className="px-2.5 py-1.5"
               >
-                ☁️
+                <Cloud size={18} />
               </Button>
               <Button variant="ghost" onClick={lock} aria-label="Travar" className="px-2.5 py-1.5">
-                🔒
+                <Lock size={18} />
               </Button>
             </div>
           ) : undefined

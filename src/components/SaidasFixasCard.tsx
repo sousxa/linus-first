@@ -5,6 +5,7 @@ import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
 import { IconPicker } from './ui/IconPicker'
+import { Icon } from './ui/icons'
 import { ContaSelect, contaFromValue } from './ui/ContaSelect'
 import { ContaTag } from './ui/ContaTag'
 import { cn } from '../lib/cn'
@@ -102,7 +103,7 @@ export function SaidasFixasCard({ className }: { className?: string }) {
               >
                 {pago ? '✓' : ''}
               </button>
-              {s.icone && <span className="text-lg leading-none">{s.icone}</span>}
+              {s.icone && <Icon name={s.icone} size={20} className="shrink-0 text-muted" />}
               <div className="min-w-0 flex-1">
                 <p className={cn('truncate text-sm font-medium', pago && 'text-muted line-through')}>
                   {s.nome}
