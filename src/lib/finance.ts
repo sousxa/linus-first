@@ -1,4 +1,4 @@
-import type { CartaoCredito, Parcela, SaidaFixa } from '../types'
+import type { AppData, CartaoCredito, Parcela, SaidaFixa, Transacao } from '../types'
 
 /** arredonda pra 2 casas evitando ruído de ponto flutuante */
 export function round2(n: number): number {
@@ -59,4 +59,55 @@ export function totalFaturas(cartoes: CartaoCredito[]): number {
 /** soma do crédito disponível em todos os cartões */
 export function totalCreditoDisponivel(cartoes: CartaoCredito[]): number {
   return round2(cartoes.reduce((acc, c) => acc + creditoDisponivel(c), 0))
+}
+
+// --- Calculadora "e se eu gastar" e lançamentos ---
+
+export interface Simulacao {
+  rotulo: string
+  antes: number
+  depois: number
+  /** ficou negativo (estourou saldo ou limite) */
+  estouro: boolean
+}
+
+/** simula um gasto sem aplicá-lo: mostra o saldo/crédito antes e depois */
+export function simularGasto(
+  d: AppData,
+  valor: number,
+  contaTipo: 'debito' | 'credito',
+  cartaoId?: string,
+): Simulacao {
+  if (contaTipo === 'debito') {
+    const depois = round2(d.saldoDebito - valor)
+    return { rotulo: 'Saldo no débito', antes: d.saldoDebito, depois, estouro: depois < 0 }
+  }
+  const cartao = d.cartoes.find((c) => c.id === cartaoId)
+  if (!cartao) return { rotulo: 'Crédito', antes: 0, depois: 0, estouro: false }
+  const antes = creditoDisponivel(cartao)
+  const depois = round2(antes - valor)
+  return { rotulo: `Crédito em ${cartao.nome}`, antes, depois, estouro: depois < 0 }
+}
+
+/** aplica uma transação avulsa nos saldos (débito) ou na fatura (crédito) */
+export function aplicarTransacao(d: AppData, t: Transacao): AppData {
+  const sinal = t.direcao === 'entrada' ? 1 : -1
+  if (t.contaTipo === 'debito') {
+    return { ...d, saldoDebito: round2(d.saldoDebito + sinal * t.valor) }
+  }
+  // crédito: saída (compra) aumenta a fatura; entrada (pagamento) diminui
+  return {
+    ...d,
+    cartoes: d.cartoes.map((c) =>
+      c.id === t.cartaoId ? { ...c, faturaAtual: round2(c.faturaAtual - sinal * t.valor) } : c,
+    ),
+  }
+}
+
+/** desfaz uma transação aplicada anteriormente */
+export function reverterTransacao(d: AppData, t: Transacao): AppData {
+  return aplicarTransacao(d, {
+    ...t,
+    direcao: t.direcao === 'entrada' ? 'saida' : 'entrada',
+  })
 }

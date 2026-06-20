@@ -11,8 +11,11 @@ import {
   creditoDisponivel,
   totalFaturas,
   totalCreditoDisponivel,
+  simularGasto,
+  aplicarTransacao,
+  reverterTransacao,
 } from './finance'
-import type { CartaoCredito, Parcela, SaidaFixa } from '../types'
+import { emptyData, type CartaoCredito, type Parcela, type SaidaFixa, type Transacao } from '../types'
 
 const mkCartao = (over: Partial<CartaoCredito>): CartaoCredito => ({
   id: Math.random().toString(),
@@ -108,5 +111,52 @@ describe('finance — cartões', () => {
     ]
     expect(totalFaturas(cs)).toBe(700)
     expect(totalCreditoDisponivel(cs)).toBe(2300)
+  })
+})
+
+describe('finance — calculadora e lançamentos', () => {
+  it('simula gasto no débito (antes/depois e estouro)', () => {
+    const d = { ...emptyData(), saldoDebito: 100 }
+    expect(simularGasto(d, 30, 'debito')).toMatchObject({ antes: 100, depois: 70, estouro: false })
+    expect(simularGasto(d, 150, 'debito').estouro).toBe(true)
+  })
+
+  it('simula gasto no crédito usando o disponível do cartão', () => {
+    const card = mkCartao({ id: 'c1', limite: 500, faturaAtual: 100 })
+    const d = { ...emptyData(), cartoes: [card] }
+    const sim = simularGasto(d, 200, 'credito', 'c1')
+    expect(sim).toMatchObject({ antes: 400, depois: 200, estouro: false })
+    expect(simularGasto(d, 500, 'credito', 'c1').estouro).toBe(true)
+  })
+
+  it('aplica e reverte transação no débito', () => {
+    const d = { ...emptyData(), saldoDebito: 100 }
+    const t: Transacao = {
+      id: 't1',
+      data: '2026-06-20',
+      descricao: 'mercado',
+      valor: 40,
+      direcao: 'saida',
+      contaTipo: 'debito',
+    }
+    const aplicado = aplicarTransacao(d, t)
+    expect(aplicado.saldoDebito).toBe(60)
+    expect(reverterTransacao(aplicado, t).saldoDebito).toBe(100)
+  })
+
+  it('saída no crédito aumenta a fatura; reverter desfaz', () => {
+    const d = { ...emptyData(), cartoes: [mkCartao({ id: 'c1', faturaAtual: 100 })] }
+    const t: Transacao = {
+      id: 't2',
+      data: '2026-06-20',
+      descricao: 'compra',
+      valor: 50,
+      direcao: 'saida',
+      contaTipo: 'credito',
+      cartaoId: 'c1',
+    }
+    const aplicado = aplicarTransacao(d, t)
+    expect(aplicado.cartoes[0].faturaAtual).toBe(150)
+    expect(reverterTransacao(aplicado, t).cartoes[0].faturaAtual).toBe(100)
   })
 })
