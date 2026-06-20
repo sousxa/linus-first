@@ -14,6 +14,8 @@ import {
   simularGasto,
   aplicarTransacao,
   reverterTransacao,
+  projetarMeses,
+  statusDoSaldo,
 } from './finance'
 import { emptyData, type CartaoCredito, type Parcela, type SaidaFixa, type Transacao } from '../types'
 
@@ -158,5 +160,36 @@ describe('finance — calculadora e lançamentos', () => {
     const aplicado = aplicarTransacao(d, t)
     expect(aplicado.cartoes[0].faturaAtual).toBe(150)
     expect(reverterTransacao(aplicado, t).cartoes[0].faturaAtual).toBe(100)
+  })
+})
+
+describe('finance — previsibilidade', () => {
+  it('statusDoSaldo classifica certo', () => {
+    expect(statusDoSaldo(-10, 1000)).toBe('perigo')
+    expect(statusDoSaldo(300, 1000)).toBe('apertado') // < metade da renda
+    expect(statusDoSaldo(5000, 1000)).toBe('safe')
+  })
+
+  it('projeta exatamente n meses', () => {
+    const d = { ...emptyData(), saldoDebito: 1000, renda: { mensal: 3000 } }
+    expect(projetarMeses(d, 6)).toHaveLength(6)
+    expect(projetarMeses(d, 12)).toHaveLength(12)
+  })
+
+  it('fica no vermelho quando as saídas superam saldo + renda', () => {
+    const d = {
+      ...emptyData(),
+      saldoDebito: 0,
+      renda: { mensal: 1000 },
+      saidasFixas: [{ id: 'a', nome: 'aluguel', valor: 2000, diaVencimento: 5, pagasPorMes: [] }],
+    }
+    const p = projetarMeses(d, 3)
+    expect(p[0].saldoFim).toBeLessThan(0)
+    expect(p[0].status).toBe('perigo')
+  })
+
+  it('fica verde quando há folga', () => {
+    const d = { ...emptyData(), saldoDebito: 10000, renda: { mensal: 5000 } }
+    expect(projetarMeses(d, 1)[0].status).toBe('safe')
   })
 })

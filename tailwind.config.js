@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: 'var(--bg)',
-        surface: 'var(--surface)',
-        'surface-2': 'var(--surface-2)',
-        border: 'var(--border)',
-        text: 'var(--text)',
-        muted: 'var(--muted)',
-        primary: 'var(--primary)',
-        good: 'var(--green)',
-        warn: 'var(--amber)',
-        bad: 'var(--red)',
+        bg: 'rgb(var(--bg) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--surface-2) / <alpha-value>)',
+        border: 'rgb(var(--border) / <alpha-value>)',
+        text: 'rgb(var(--text) / <alpha-value>)',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
+        primary: 'rgb(var(--primary) / <alpha-value>)',
+        good: 'rgb(var(--green) / <alpha-value>)',
+        warn: 'rgb(var(--amber) / <alpha-value>)',
+        bad: 'rgb(var(--red) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'],

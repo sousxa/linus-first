@@ -1,4 +1,5 @@
 import type { AppData, CartaoCredito, Parcela, SaidaFixa, Transacao } from '../types'
+import { addMonths, currentMonth } from './date'
 
 /** arredonda pra 2 casas evitando ruído de ponto flutuante */
 export function round2(n: number): number {
@@ -110,4 +111,59 @@ export function reverterTransacao(d: AppData, t: Transacao): AppData {
     ...t,
     direcao: t.direcao === 'entrada' ? 'saida' : 'entrada',
   })
+}
+
+// --- Previsibilidade (projeção mês a mês) ---
+
+export type StatusMes = 'safe' | 'apertado' | 'perigo'
+
+export interface MesProjecao {
+  mes: string
+  entradas: number
+  saidas: number
+  saldoInicio: number
+  saldoFim: number
+  status: StatusMes
+}
+
+/** classifica o mês: vermelho se negativo, amarelo se apertado, verde se folgado */
+export function statusDoSaldo(saldoFim: number, renda: number): StatusMes {
+  if (saldoFim < 0) return 'perigo'
+  if (renda > 0 ? saldoFim < renda * 0.5 : saldoFim === 0) return 'apertado'
+  return 'safe'
+}
+
+/**
+ * Projeta o saldo dos próximos n meses.
+ * Mês 0 considera o que ainda falta pagar (fixas pendentes + faturas atuais);
+ * meses seguintes usam o total fixo recorrente. Parcelas entram nos seus meses restantes.
+ */
+export function projetarMeses(d: AppData, n = 6): MesProjecao[] {
+  const fixasTotal = totalSaidasFixas(d.saidasFixas)
+  const base = currentMonth()
+  const out: MesProjecao[] = []
+  let saldo = d.saldoDebito
+
+  for (let i = 0; i < n; i++) {
+    const mes = addMonths(base, i)
+    const entradas = d.renda.mensal
+    const fixas = i === 0 ? totalFixasPendentes(d.saidasFixas, mes) : fixasTotal
+    const parcelas = d.parcelas.reduce(
+      (acc, p) => acc + (i < parcelaRestantes(p) ? p.valorParcela : 0),
+      0,
+    )
+    const faturas = i === 0 ? totalFaturas(d.cartoes) : 0
+    const saidas = fixas + parcelas + faturas
+    const saldoInicio = saldo
+    saldo = saldoInicio + entradas - saidas
+    out.push({
+      mes,
+      entradas,
+      saidas,
+      saldoInicio,
+      saldoFim: saldo,
+      status: statusDoSaldo(saldo, entradas),
+    })
+  }
+  return out
 }
