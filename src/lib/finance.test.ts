@@ -8,8 +8,20 @@ import {
   parcelaQuitada,
   parcelaValorRestante,
   totalParcelasMensais,
+  creditoDisponivel,
+  totalFaturas,
+  totalCreditoDisponivel,
 } from './finance'
-import type { Parcela, SaidaFixa } from '../types'
+import type { CartaoCredito, Parcela, SaidaFixa } from '../types'
+
+const mkCartao = (over: Partial<CartaoCredito>): CartaoCredito => ({
+  id: Math.random().toString(),
+  nome: 'cartão',
+  limite: 1000,
+  faturaAtual: 0,
+  diaVencimento: 10,
+  ...over,
+})
 
 const mkParcela = (over: Partial<Parcela>): Parcela => ({
   id: Math.random().toString(),
@@ -77,5 +89,24 @@ describe('finance — parcelas', () => {
       mkParcela({ valorParcela: 150, parcelasPagas: 2, totalParcelas: 10 }),
     ]
     expect(totalParcelasMensais(ps)).toBe(150)
+  })
+})
+
+describe('finance — cartões', () => {
+  it('crédito disponível = limite - fatura', () => {
+    expect(creditoDisponivel(mkCartao({ limite: 1000, faturaAtual: 350 }))).toBe(650)
+  })
+
+  it('crédito disponível pode ser negativo (estourou o limite)', () => {
+    expect(creditoDisponivel(mkCartao({ limite: 500, faturaAtual: 600 }))).toBe(-100)
+  })
+
+  it('soma faturas e crédito disponível de vários cartões', () => {
+    const cs = [
+      mkCartao({ limite: 1000, faturaAtual: 200 }),
+      mkCartao({ limite: 2000, faturaAtual: 500 }),
+    ]
+    expect(totalFaturas(cs)).toBe(700)
+    expect(totalCreditoDisponivel(cs)).toBe(2300)
   })
 })
