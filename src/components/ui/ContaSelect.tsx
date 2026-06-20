@@ -18,10 +18,10 @@ export function ContaSelect({ value, onChange, label = 'Cobrar em' }: Props) {
         onChange={(e) => onChange(e.target.value)}
         className="h-[42px] w-full rounded-xl border border-border bg-surface-2 px-3 text-sm focus:border-primary focus:outline-none"
       >
-        <option value="debito">🏦 Débito (conta)</option>
+        <option value="debito">Débito (conta)</option>
         {data.cartoes.map((c) => (
           <option key={c.id} value={c.id}>
-            {c.icone || '💳'} {c.nome}
+            Cartão · {c.nome}
           </option>
         ))}
       </select>

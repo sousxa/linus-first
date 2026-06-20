@@ -5,6 +5,7 @@ import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
 import { IconPicker } from './ui/IconPicker'
+import { Icon } from './ui/icons'
 import { ContaSelect, contaFromValue } from './ui/ContaSelect'
 import { ContaTag } from './ui/ContaTag'
 import { cn } from '../lib/cn'
@@ -90,7 +91,7 @@ export function ParcelasCard({ className }: { className?: string }) {
           return (
             <li key={p.id} className="rounded-xl border border-border bg-surface-2 p-2.5">
               <div className="flex items-center gap-2">
-                {p.icone && <span className="text-lg leading-none">{p.icone}</span>}
+                {p.icone && <Icon name={p.icone} size={20} className="shrink-0 text-muted" />}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.nome}</p>
                   <p className="flex items-center gap-1.5 text-[11px] text-muted">

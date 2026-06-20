@@ -29,9 +29,18 @@ body {
   background: rgb(var(--bg));
   color: rgb(var(--text));
   font-family: 'Inter', system-ui, 'Segoe UI', sans-serif;
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'tnum' 1, 'cv01' 1;
   overscroll-behavior: none;
+}
+
+/* IMPORTANTE: campos com fonte >= 16px evitam o zoom automático do iOS ao focar.
+   !important porque utilitários do Tailwind (text-sm) têm prioridade sobre seletor de elemento. */
+input,
+select,
+textarea {
+  font-size: 16px !important;
 }
 
 .tnum {
