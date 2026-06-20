@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Calculator, Landmark, CreditCard, Minus, Plus } from 'lucide-react'
 import { useData } from '../store/VaultContext'
 import type { Transacao } from '../types'
 import { Card } from './ui/Card'
@@ -13,27 +14,29 @@ import { simularGasto, aplicarTransacao, reverterTransacao } from '../lib/financ
 export function CalculadoraCard({ className }: { className?: string }) {
   const { data, update } = useData()
   const [valor, setValor] = useState(0)
-  const [alvo, setAlvo] = useState<string>('debito') // 'debito' ou id do cartão
+  const [tipo, setTipo] = useState<'debito' | 'credito'>('debito')
+  const [cartaoId, setCartaoId] = useState<string>(data.cartoes[0]?.id ?? '')
   const [descricao, setDescricao] = useState('')
 
-  const contaTipo = alvo === 'debito' ? 'debito' : 'credito'
-  const cartaoId = alvo === 'debito' ? undefined : alvo
+  const semCartao = tipo === 'credito' && data.cartoes.length === 0
+  const cartaoOk = tipo === 'debito' || (!!cartaoId && data.cartoes.some((c) => c.id === cartaoId))
+  const podeRegistrar = valor > 0 && cartaoOk && !semCartao
 
   const sim = useMemo(
-    () => simularGasto(data, valor, contaTipo, cartaoId),
-    [data, valor, contaTipo, cartaoId],
+    () => simularGasto(data, valor, tipo, tipo === 'credito' ? cartaoId : undefined),
+    [data, valor, tipo, cartaoId],
   )
 
   function registrar(direcao: 'entrada' | 'saida') {
-    if (valor <= 0) return
+    if (!podeRegistrar) return
     const t: Transacao = {
       id: uid(),
       data: new Date().toISOString().slice(0, 10),
       descricao: descricao.trim() || (direcao === 'saida' ? 'Gasto' : 'Entrada'),
       valor,
       direcao,
-      contaTipo,
-      cartaoId,
+      contaTipo: tipo,
+      cartaoId: tipo === 'credito' ? cartaoId : undefined,
     }
     update((d) => {
       const nd = aplicarTransacao(d, t)
@@ -53,26 +56,36 @@ export function CalculadoraCard({ className }: { className?: string }) {
   const recentes = data.transacoes.slice(0, 5)
 
   return (
-    <Card title="Calculadora — e se eu gastar?" icon="🧮" className={className}>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <MoneyInput label="Quanto" value={valor} onValue={setValor} />
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-muted">Onde</span>
+    <Card title="Lançar / e se eu gastar?" icon={<Calculator size={14} />} className={className}>
+      <MoneyInput label="Quanto" value={valor} onValue={setValor} />
+
+      {/* onde: débito ou crédito */}
+      <div className="mt-3">
+        <span className="mb-1 block text-sm font-medium text-muted">Onde</span>
+        <div className="grid grid-cols-2 gap-2">
+          <SegBtn active={tipo === 'debito'} onClick={() => setTipo('debito')} icon={Landmark} label="Débito" />
+          <SegBtn active={tipo === 'credito'} onClick={() => setTipo('credito')} icon={CreditCard} label="Crédito" />
+        </div>
+      </div>
+
+      {tipo === 'credito' &&
+        (semCartao ? (
+          <p className="mt-2 text-sm text-muted">Cadastre um cartão primeiro pra lançar no crédito.</p>
+        ) : (
           <select
-            value={alvo}
-            onChange={(e) => setAlvo(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm focus:border-primary focus:outline-none"
+            value={cartaoId}
+            onChange={(e) => setCartaoId(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 focus:border-primary focus:outline-none"
           >
-            <option value="debito">Débito (conta)</option>
             {data.cartoes.map((c) => (
               <option key={c.id} value={c.id}>
-                Crédito · {c.nome}
+                {c.nome}
               </option>
             ))}
           </select>
-        </label>
-      </div>
+        ))}
 
+      {/* simulação (prévia) */}
       <div
         className={cn(
           'mt-3 rounded-xl border p-3',
@@ -80,26 +93,21 @@ export function CalculadoraCard({ className }: { className?: string }) {
         )}
       >
         <p className="text-xs text-muted">
-          {sim.rotulo} depois de gastar {formatBRL(valor)}:
+          Simulação · {sim.rotulo} depois de {formatBRL(valor)}:
         </p>
         <p className="mt-1 flex items-baseline gap-2">
           <span className="tnum text-sm text-muted line-through">{formatBRL(sim.antes)}</span>
           <span aria-hidden className="text-muted">
             →
           </span>
-          <span
-            className={cn('tnum text-2xl font-bold', sim.depois < 0 ? 'text-bad' : 'text-good')}
-          >
+          <span className={cn('tnum text-2xl font-bold', sim.depois < 0 ? 'text-bad' : 'text-good')}>
             {formatBRL(sim.depois)}
           </span>
         </p>
-        {sim.estouro && (
-          <p className="mt-1 text-xs font-medium text-bad">
-            ⚠️ Vai ficar no negativo — melhor não gastar tudo isso.
-          </p>
-        )}
+        {sim.estouro && <p className="mt-1 text-xs font-medium text-bad">⚠️ Vai ficar no negativo.</p>}
       </div>
 
+      {/* registrar de verdade */}
       <div className="mt-3 space-y-2">
         <Field
           label="Descrição (opcional)"
@@ -108,15 +116,15 @@ export function CalculadoraCard({ className }: { className?: string }) {
           onChange={(e) => setDescricao(e.target.value)}
         />
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="primary" onClick={() => registrar('saida')} disabled={valor <= 0}>
-            − Registrar saída
+          <Button onClick={() => registrar('saida')} disabled={!podeRegistrar}>
+            <Minus size={16} /> Saída
           </Button>
-          <Button variant="ghost" onClick={() => registrar('entrada')} disabled={valor <= 0}>
-            + Registrar entrada
+          <Button variant="ghost" onClick={() => registrar('entrada')} disabled={!podeRegistrar}>
+            <Plus size={16} /> Entrada
           </Button>
         </div>
-        <p className="text-[11px] text-muted">
-          “Registrar” atualiza seu saldo/fatura. A simulação acima é só uma prévia.
+        <p className="text-xs text-muted">
+          A simulação é só prévia. “Saída/Entrada” registra e atualiza seu saldo/fatura.
         </p>
       </div>
 
@@ -142,7 +150,7 @@ export function CalculadoraCard({ className }: { className?: string }) {
                 </span>
                 <button
                   onClick={() => desfazer(t)}
-                  className="text-[11px] text-muted hover:underline"
+                  className="text-xs text-muted hover:underline"
                 >
                   desfazer
                 </button>
@@ -152,5 +160,30 @@ export function CalculadoraCard({ className }: { className?: string }) {
         </div>
       )}
     </Card>
+  )
+}
+
+function SegBtn({
+  active,
+  onClick,
+  icon: IconCmp,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: typeof Landmark
+  label: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition',
+        active ? 'border-primary bg-primary/15 text-primary' : 'border-border text-muted hover:bg-surface-2',
+      )}
+    >
+      <IconCmp size={16} />
+      {label}
+    </button>
   )
 }
