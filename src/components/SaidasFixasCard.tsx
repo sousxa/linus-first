@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { useData } from '../store/VaultContext'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
+import { Modal } from './ui/Modal'
 import { IconPicker } from './ui/IconPicker'
 import { Icon } from './ui/icons'
 import { ContaSelect, contaFromValue } from './ui/ContaSelect'
@@ -17,35 +19,7 @@ import { totalSaidasFixas, totalFixasPendentes, fixaPaga } from '../lib/finance'
 export function SaidasFixasCard({ className }: { className?: string }) {
   const { data, update } = useData()
   const mes = currentMonth()
-  const [nome, setNome] = useState('')
-  const [valor, setValor] = useState(0)
-  const [dia, setDia] = useState(5)
-  const [icone, setIcone] = useState('')
-  const [conta, setConta] = useState('debito')
-
-  function add() {
-    if (!nome.trim() || valor <= 0) return
-    update((d) => ({
-      ...d,
-      saidasFixas: [
-        ...d.saidasFixas,
-        {
-          id: uid(),
-          nome: nome.trim(),
-          valor,
-          diaVencimento: dia,
-          pagasPorMes: [],
-          icone: icone || undefined,
-          ...contaFromValue(conta),
-        },
-      ],
-    }))
-    setNome('')
-    setValor(0)
-    setDia(5)
-    setIcone('')
-    setConta('debito')
-  }
+  const [open, setOpen] = useState(false)
 
   function togglePago(id: string) {
     update((d) => ({
@@ -72,7 +46,7 @@ export function SaidasFixasCard({ className }: { className?: string }) {
   return (
     <Card
       title="Saídas fixas"
-      icon="🔁"
+      icon={<Icon name="receipt" size={14} />}
       className={className}
       action={
         <span className="tnum text-xs text-muted">
@@ -82,8 +56,8 @@ export function SaidasFixasCard({ className }: { className?: string }) {
     >
       <ul className="space-y-2">
         {data.saidasFixas.length === 0 && (
-          <li className="rounded-xl border border-dashed border-border p-3 text-center text-sm text-muted">
-            Nenhuma saída fixa. Adicione assinaturas, aluguel, contas…
+          <li className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted">
+            Nenhuma saída fixa ainda.
           </li>
         )}
         {data.saidasFixas.map((s) => {
@@ -108,7 +82,7 @@ export function SaidasFixasCard({ className }: { className?: string }) {
                 <p className={cn('truncate text-sm font-medium', pago && 'text-muted line-through')}>
                   {s.nome}
                 </p>
-                <p className="flex items-center gap-1.5 text-[11px] text-muted">
+                <p className="flex items-center gap-1.5 text-xs text-muted">
                   dia {s.diaVencimento}
                   <ContaTag item={s} />
                 </p>
@@ -133,7 +107,48 @@ export function SaidasFixasCard({ className }: { className?: string }) {
         </p>
       )}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
+      <Button variant="subtle" onClick={() => setOpen(true)} className="mt-3 w-full">
+        <Plus size={16} /> Adicionar saída fixa
+      </Button>
+
+      {open && <AddSaidaFixaForm onClose={() => setOpen(false)} />}
+    </Card>
+  )
+}
+
+function AddSaidaFixaForm({ onClose }: { onClose: () => void }) {
+  const { update } = useData()
+  const [nome, setNome] = useState('')
+  const [valor, setValor] = useState(0)
+  const [dia, setDia] = useState(5)
+  const [icone, setIcone] = useState('')
+  const [conta, setConta] = useState('debito')
+
+  const valido = nome.trim().length > 0 && valor > 0 && dia >= 1 && dia <= 31
+
+  function add() {
+    if (!valido) return
+    update((d) => ({
+      ...d,
+      saidasFixas: [
+        ...d.saidasFixas,
+        {
+          id: uid(),
+          nome: nome.trim(),
+          valor,
+          diaVencimento: dia,
+          pagasPorMes: [],
+          icone: icone || undefined,
+          ...contaFromValue(conta),
+        },
+      ],
+    }))
+    onClose()
+  }
+
+  return (
+    <Modal title="Nova saída fixa" onClose={onClose}>
+      <div className="grid grid-cols-2 gap-3">
         <IconPicker value={icone} onChange={setIcone} />
         <Field
           label="Nome"
@@ -153,10 +168,10 @@ export function SaidasFixasCard({ className }: { className?: string }) {
         <div className="col-span-2">
           <ContaSelect value={conta} onChange={setConta} />
         </div>
-        <Button onClick={add} disabled={!nome.trim() || valor <= 0} className="col-span-2">
-          + Adicionar saída fixa
+        <Button onClick={add} disabled={!valido} className="col-span-2">
+          Adicionar
         </Button>
       </div>
-    </Card>
+    </Modal>
   )
 }

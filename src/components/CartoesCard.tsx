@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import { useData } from '../store/VaultContext'
 import type { CartaoCredito } from '../types'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
+import { Modal } from './ui/Modal'
 import { IconPicker } from './ui/IconPicker'
 import { Icon } from './ui/icons'
 import { cn } from '../lib/cn'
@@ -20,32 +22,7 @@ import {
 
 export function CartoesCard({ className }: { className?: string }) {
   const { data, update } = useData()
-  const [nome, setNome] = useState('')
-  const [limite, setLimite] = useState(0)
-  const [fatura, setFatura] = useState(0)
-  const [icone, setIcone] = useState('')
-
-  function add() {
-    if (!nome.trim()) return
-    update((d) => ({
-      ...d,
-      cartoes: [
-        ...d.cartoes,
-        {
-          id: uid(),
-          nome: nome.trim(),
-          limite,
-          faturaAtual: fatura,
-          diaVencimento: 10,
-          icone: icone || undefined,
-        },
-      ],
-    }))
-    setNome('')
-    setLimite(0)
-    setFatura(0)
-    setIcone('')
-  }
+  const [open, setOpen] = useState(false)
 
   function patch(id: string, p: Partial<CartaoCredito>) {
     update((d) => ({
@@ -61,7 +38,7 @@ export function CartoesCard({ className }: { className?: string }) {
   return (
     <Card
       title="Cartões de crédito"
-      icon="💳"
+      icon={<Icon name="credit-card" size={14} />}
       className={className}
       action={
         <span className="tnum text-xs text-muted">
@@ -71,12 +48,14 @@ export function CartoesCard({ className }: { className?: string }) {
     >
       <ul className="space-y-3">
         {data.cartoes.length === 0 && (
-          <li className="rounded-xl border border-dashed border-border p-3 text-center text-sm text-muted">
-            Nenhum cartão. Adicione pra acompanhar limite e fatura.
+          <li className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted">
+            Nenhum cartão ainda.
           </li>
         )}
         {data.cartoes.map((c) => {
           const disp = creditoDisponivel(c)
+          const atrelado = gastoMensalDoCartao(data, c.id)
+          const qtd = fixasDoCartao(data.saidasFixas, c.id).length + parcelasDoCartao(data.parcelas, c.id).length
           return (
             <li key={c.id} className="rounded-xl border border-border bg-surface-2 p-3">
               <div className="mb-2 flex items-center justify-between">
@@ -93,11 +72,7 @@ export function CartoesCard({ className }: { className?: string }) {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <MoneyInput
-                  label="Limite"
-                  value={c.limite}
-                  onValue={(n) => patch(c.id, { limite: n })}
-                />
+                <MoneyInput label="Limite" value={c.limite} onValue={(n) => patch(c.id, { limite: n })} />
                 <MoneyInput
                   label="Fatura atual"
                   value={c.faturaAtual}
@@ -110,23 +85,56 @@ export function CartoesCard({ className }: { className?: string }) {
                   {formatBRL(disp)}
                 </span>
               </p>
-              {(() => {
-                const atrelado = gastoMensalDoCartao(data, c.id)
-                const qtd = fixasDoCartao(data.saidasFixas, c.id).length + parcelasDoCartao(data.parcelas, c.id).length
-                if (qtd === 0) return null
-                return (
-                  <p className="mt-1 text-[11px] text-muted">
-                    🔗 {qtd} {qtd === 1 ? 'item atrelado' : 'itens atrelados'} ·{' '}
-                    <span className="tnum text-text">{formatBRL(atrelado)}/mês</span>
-                  </p>
-                )
-              })()}
+              {qtd > 0 && (
+                <p className="mt-1 text-xs text-muted">
+                  {qtd} {qtd === 1 ? 'item atrelado' : 'itens atrelados'} ·{' '}
+                  <span className="tnum text-text">{formatBRL(atrelado)}/mês</span>
+                </p>
+              )}
             </li>
           )
         })}
       </ul>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
+      <Button variant="subtle" onClick={() => setOpen(true)} className="mt-3 w-full">
+        <Plus size={16} /> Adicionar cartão
+      </Button>
+
+      {open && <AddCartaoForm onClose={() => setOpen(false)} />}
+    </Card>
+  )
+}
+
+function AddCartaoForm({ onClose }: { onClose: () => void }) {
+  const { update } = useData()
+  const [nome, setNome] = useState('')
+  const [limite, setLimite] = useState(0)
+  const [icone, setIcone] = useState('')
+
+  const valido = nome.trim().length > 0 && limite > 0
+
+  function add() {
+    if (!valido) return
+    update((d) => ({
+      ...d,
+      cartoes: [
+        ...d.cartoes,
+        {
+          id: uid(),
+          nome: nome.trim(),
+          limite,
+          faturaAtual: 0,
+          diaVencimento: 10,
+          icone: icone || undefined,
+        },
+      ],
+    }))
+    onClose()
+  }
+
+  return (
+    <Modal title="Novo cartão" onClose={onClose}>
+      <div className="grid grid-cols-2 gap-3">
         <IconPicker value={icone} onChange={setIcone} />
         <Field
           label="Nome do cartão"
@@ -134,12 +142,16 @@ export function CartoesCard({ className }: { className?: string }) {
           value={nome}
           onChange={(e) => setNome(e.target.value)}
         />
-        <MoneyInput label="Limite" value={limite} onValue={setLimite} />
-        <MoneyInput label="Fatura atual" value={fatura} onValue={setFatura} />
-        <Button onClick={add} disabled={!nome.trim()} className="col-span-2">
-          + Adicionar cartão
+        <div className="col-span-2">
+          <MoneyInput label="Limite" value={limite} onValue={setLimite} />
+        </div>
+        <p className="col-span-2 -mt-1 text-xs text-muted">
+          A fatura você atualiza depois, direto no cartão.
+        </p>
+        <Button onClick={add} disabled={!valido} className="col-span-2">
+          Adicionar
         </Button>
       </div>
-    </Card>
+    </Modal>
   )
 }
