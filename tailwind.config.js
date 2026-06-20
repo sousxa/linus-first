@@ -12,7 +12,6 @@ export default {
         muted: 'rgb(var(--muted) / <alpha-value>)',
         primary: 'rgb(var(--primary) / <alpha-value>)',
         good: 'rgb(var(--green) / <alpha-value>)',
-        warn: 'rgb(var(--amber) / <alpha-value>)',
         bad: 'rgb(var(--red) / <alpha-value>)',
       },
       fontFamily: {

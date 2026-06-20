@@ -13,7 +13,7 @@ export function Card({ title, icon, action, children, className }: CardProps) {
   return (
     <section
       className={cn(
-        'rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5',
+        'flex flex-col rounded-2xl border border-border bg-surface p-4',
         className,
       )}
     >

@@ -9,12 +9,12 @@ import { formatBRL, monthLabel } from '../lib/format'
 const tone: Record<StatusMes, { box: string; value: string; dot: string; rotulo: string }> = {
   safe: { box: 'border-good/40 bg-good/10', value: 'text-good', dot: 'bg-good', rotulo: 'sobra' },
   apertado: {
-    box: 'border-warn/40 bg-warn/10',
-    value: 'text-warn',
-    dot: 'bg-warn',
+    box: 'border-border bg-surface-2',
+    value: 'text-text',
+    dot: 'bg-muted',
     rotulo: 'apertado',
   },
-  perigo: { box: 'border-bad/40 bg-bad/10', value: 'text-bad', dot: 'bg-bad', rotulo: 'no vermelho' },
+  perigo: { box: 'border-bad/50 bg-bad/10', value: 'text-bad', dot: 'bg-bad', rotulo: 'no vermelho' },
 }
 
 export function ForecastTable({ className }: { className?: string }) {
@@ -49,8 +49,9 @@ export function ForecastTable({ className }: { className?: string }) {
           const t = tone[m.status]
           return (
             <div key={m.mes} className={cn('rounded-xl border p-3', t.box)}>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+              <p className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wide text-muted">
                 {monthLabel(m.mes)}
+                {m.status === 'perigo' && <span aria-label="no vermelho">⚠️</span>}
               </p>
               <p className={cn('tnum mt-1 text-lg font-bold', t.value)}>{formatBRL(m.saldoFim)}</p>
               <p className="mt-1 text-[10px] text-muted">
