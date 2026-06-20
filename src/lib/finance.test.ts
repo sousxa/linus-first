@@ -11,6 +11,9 @@ import {
   creditoDisponivel,
   totalFaturas,
   totalCreditoDisponivel,
+  fixasDoCartao,
+  parcelasDoCartao,
+  gastoMensalDoCartao,
   simularGasto,
   aplicarTransacao,
   reverterTransacao,
@@ -114,6 +117,32 @@ describe('finance — cartões', () => {
     ]
     expect(totalFaturas(cs)).toBe(700)
     expect(totalCreditoDisponivel(cs)).toBe(2300)
+  })
+})
+
+describe('finance — vínculo com cartão', () => {
+  it('filtra fixas e parcelas atreladas ao cartão', () => {
+    const saidas = [
+      mk({ valor: 50, contaTipo: 'credito', cartaoId: 'c1' }),
+      mk({ valor: 30, contaTipo: 'debito' }),
+      mk({ valor: 20, contaTipo: 'credito', cartaoId: 'c2' }),
+    ]
+    const parcelas = [
+      mkParcela({ valorParcela: 100, contaTipo: 'credito', cartaoId: 'c1', parcelasPagas: 1 }),
+      mkParcela({ valorParcela: 200, contaTipo: 'credito', cartaoId: 'c1', parcelasPagas: 12, totalParcelas: 12 }), // quitada
+    ]
+    expect(fixasDoCartao(saidas, 'c1')).toHaveLength(1)
+    expect(parcelasDoCartao(parcelas, 'c1')).toHaveLength(1) // a quitada não conta
+  })
+
+  it('soma o gasto mensal recorrente de um cartão', () => {
+    const d = {
+      ...emptyData(),
+      saidasFixas: [mk({ valor: 50, contaTipo: 'credito', cartaoId: 'c1' })],
+      parcelas: [mkParcela({ valorParcela: 150, contaTipo: 'credito', cartaoId: 'c1', parcelasPagas: 0 })],
+    }
+    expect(gastoMensalDoCartao(d, 'c1')).toBe(200)
+    expect(gastoMensalDoCartao(d, 'c2')).toBe(0)
   })
 })
 

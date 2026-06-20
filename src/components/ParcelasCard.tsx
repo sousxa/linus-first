@@ -4,6 +4,9 @@ import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
+import { IconPicker } from './ui/IconPicker'
+import { ContaSelect, contaFromValue } from './ui/ContaSelect'
+import { ContaTag } from './ui/ContaTag'
 import { cn } from '../lib/cn'
 import { formatBRL } from '../lib/format'
 import { currentMonth } from '../lib/date'
@@ -21,6 +24,8 @@ export function ParcelasCard({ className }: { className?: string }) {
   const [valor, setValor] = useState(0)
   const [total, setTotal] = useState(12)
   const [mesInicio, setMesInicio] = useState(currentMonth())
+  const [icone, setIcone] = useState('')
+  const [conta, setConta] = useState('debito')
 
   function add() {
     if (!nome.trim() || valor <= 0 || total < 1) return
@@ -35,12 +40,16 @@ export function ParcelasCard({ className }: { className?: string }) {
           totalParcelas: total,
           parcelasPagas: 0,
           mesInicio,
+          icone: icone || undefined,
+          ...contaFromValue(conta),
         },
       ],
     }))
     setNome('')
     setValor(0)
     setTotal(12)
+    setIcone('')
+    setConta('debito')
   }
 
   function pagar(id: string, delta: number) {
@@ -81,10 +90,13 @@ export function ParcelasCard({ className }: { className?: string }) {
           return (
             <li key={p.id} className="rounded-xl border border-border bg-surface-2 p-2.5">
               <div className="flex items-center gap-2">
+                {p.icone && <span className="text-lg leading-none">{p.icone}</span>}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.nome}</p>
-                  <p className="text-[11px] text-muted">
-                    {formatBRL(p.valorParcela)} · faltam {parcelaValorRestante(p) > 0 ? formatBRL(parcelaValorRestante(p)) : 'nada'}
+                  <p className="flex items-center gap-1.5 text-[11px] text-muted">
+                    {formatBRL(p.valorParcela)} · faltam{' '}
+                    {parcelaValorRestante(p) > 0 ? formatBRL(parcelaValorRestante(p)) : 'nada'}
+                    <ContaTag item={p} />
                   </p>
                 </div>
                 <span
@@ -134,14 +146,13 @@ export function ParcelasCard({ className }: { className?: string }) {
       </ul>
 
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
-        <div className="col-span-2">
-          <Field
-            label="O que parcelou"
-            placeholder="Celular, geladeira…"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </div>
+        <IconPicker value={icone} onChange={setIcone} />
+        <Field
+          label="O que parcelou"
+          placeholder="Celular, geladeira…"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
         <MoneyInput label="Valor da parcela" value={valor} onValue={setValor} />
         <Field
           label="Nº de parcelas"
@@ -151,13 +162,14 @@ export function ParcelasCard({ className }: { className?: string }) {
           value={total}
           onChange={(e) => setTotal(Number(e.target.value))}
         />
+        <Field
+          label="Mês de início"
+          type="month"
+          value={mesInicio}
+          onChange={(e) => setMesInicio(e.target.value)}
+        />
         <div className="col-span-2">
-          <Field
-            label="Mês de início"
-            type="month"
-            value={mesInicio}
-            onChange={(e) => setMesInicio(e.target.value)}
-          />
+          <ContaSelect value={conta} onChange={setConta} />
         </div>
         <Button
           onClick={add}

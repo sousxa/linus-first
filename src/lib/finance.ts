@@ -62,6 +62,25 @@ export function totalCreditoDisponivel(cartoes: CartaoCredito[]): number {
   return round2(cartoes.reduce((acc, c) => acc + creditoDisponivel(c), 0))
 }
 
+/** saídas fixas atreladas a um cartão */
+export function fixasDoCartao(saidas: SaidaFixa[], cartaoId: string): SaidaFixa[] {
+  return saidas.filter((s) => s.contaTipo === 'credito' && s.cartaoId === cartaoId)
+}
+
+/** parcelas ativas (não quitadas) atreladas a um cartão */
+export function parcelasDoCartao(parcelas: Parcela[], cartaoId: string): Parcela[] {
+  return parcelas.filter(
+    (p) => p.contaTipo === 'credito' && p.cartaoId === cartaoId && !parcelaQuitada(p),
+  )
+}
+
+/** gasto mensal recorrente (fixas + parcelas) atrelado a um cartão */
+export function gastoMensalDoCartao(d: AppData, cartaoId: string): number {
+  const fx = fixasDoCartao(d.saidasFixas, cartaoId).reduce((a, s) => a + s.valor, 0)
+  const pc = parcelasDoCartao(d.parcelas, cartaoId).reduce((a, p) => a + p.valorParcela, 0)
+  return round2(fx + pc)
+}
+
 // --- Calculadora "e se eu gastar" e lançamentos ---
 
 export interface Simulacao {

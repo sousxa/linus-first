@@ -4,6 +4,9 @@ import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
+import { IconPicker } from './ui/IconPicker'
+import { ContaSelect, contaFromValue } from './ui/ContaSelect'
+import { ContaTag } from './ui/ContaTag'
 import { cn } from '../lib/cn'
 import { formatBRL } from '../lib/format'
 import { currentMonth } from '../lib/date'
@@ -16,6 +19,8 @@ export function SaidasFixasCard({ className }: { className?: string }) {
   const [nome, setNome] = useState('')
   const [valor, setValor] = useState(0)
   const [dia, setDia] = useState(5)
+  const [icone, setIcone] = useState('')
+  const [conta, setConta] = useState('debito')
 
   function add() {
     if (!nome.trim() || valor <= 0) return
@@ -23,12 +28,22 @@ export function SaidasFixasCard({ className }: { className?: string }) {
       ...d,
       saidasFixas: [
         ...d.saidasFixas,
-        { id: uid(), nome: nome.trim(), valor, diaVencimento: dia, pagasPorMes: [] },
+        {
+          id: uid(),
+          nome: nome.trim(),
+          valor,
+          diaVencimento: dia,
+          pagasPorMes: [],
+          icone: icone || undefined,
+          ...contaFromValue(conta),
+        },
       ],
     }))
     setNome('')
     setValor(0)
     setDia(5)
+    setIcone('')
+    setConta('debito')
   }
 
   function togglePago(id: string) {
@@ -82,18 +97,20 @@ export function SaidasFixasCard({ className }: { className?: string }) {
                 aria-label={pago ? 'Desmarcar pago' : 'Marcar como pago'}
                 className={cn(
                   'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm transition',
-                  pago
-                    ? 'border-good bg-good text-white'
-                    : 'border-border text-muted hover:border-good',
+                  pago ? 'border-good bg-good text-black' : 'border-border text-muted hover:border-good',
                 )}
               >
                 {pago ? '✓' : ''}
               </button>
+              {s.icone && <span className="text-lg leading-none">{s.icone}</span>}
               <div className="min-w-0 flex-1">
                 <p className={cn('truncate text-sm font-medium', pago && 'text-muted line-through')}>
                   {s.nome}
                 </p>
-                <p className="text-[11px] text-muted">vence dia {s.diaVencimento}</p>
+                <p className="flex items-center gap-1.5 text-[11px] text-muted">
+                  dia {s.diaVencimento}
+                  <ContaTag item={s} />
+                </p>
               </div>
               <span className="tnum text-sm font-semibold">{formatBRL(s.valor)}</span>
               <button
@@ -116,14 +133,13 @@ export function SaidasFixasCard({ className }: { className?: string }) {
       )}
 
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
-        <div className="col-span-2">
-          <Field
-            label="Nome"
-            placeholder="Netflix, aluguel, internet…"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </div>
+        <IconPicker value={icone} onChange={setIcone} />
+        <Field
+          label="Nome"
+          placeholder="Netflix, aluguel…"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
         <MoneyInput label="Valor" value={valor} onValue={setValor} />
         <Field
           label="Dia venc."
@@ -133,6 +149,9 @@ export function SaidasFixasCard({ className }: { className?: string }) {
           value={dia}
           onChange={(e) => setDia(Number(e.target.value))}
         />
+        <div className="col-span-2">
+          <ContaSelect value={conta} onChange={setConta} />
+        </div>
         <Button onClick={add} disabled={!nome.trim() || valor <= 0} className="col-span-2">
           + Adicionar saída fixa
         </Button>

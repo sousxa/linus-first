@@ -5,16 +5,24 @@ import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Field } from './ui/Field'
 import { MoneyInput } from './ui/MoneyInput'
+import { IconPicker } from './ui/IconPicker'
 import { cn } from '../lib/cn'
 import { formatBRL } from '../lib/format'
 import { uid } from '../lib/id'
-import { creditoDisponivel, totalCreditoDisponivel } from '../lib/finance'
+import {
+  creditoDisponivel,
+  totalCreditoDisponivel,
+  gastoMensalDoCartao,
+  fixasDoCartao,
+  parcelasDoCartao,
+} from '../lib/finance'
 
 export function CartoesCard({ className }: { className?: string }) {
   const { data, update } = useData()
   const [nome, setNome] = useState('')
   const [limite, setLimite] = useState(0)
   const [fatura, setFatura] = useState(0)
+  const [icone, setIcone] = useState('')
 
   function add() {
     if (!nome.trim()) return
@@ -22,12 +30,20 @@ export function CartoesCard({ className }: { className?: string }) {
       ...d,
       cartoes: [
         ...d.cartoes,
-        { id: uid(), nome: nome.trim(), limite, faturaAtual: fatura, diaVencimento: 10 },
+        {
+          id: uid(),
+          nome: nome.trim(),
+          limite,
+          faturaAtual: fatura,
+          diaVencimento: 10,
+          icone: icone || undefined,
+        },
       ],
     }))
     setNome('')
     setLimite(0)
     setFatura(0)
+    setIcone('')
   }
 
   function patch(id: string, p: Partial<CartaoCredito>) {
@@ -63,7 +79,10 @@ export function CartoesCard({ className }: { className?: string }) {
           return (
             <li key={c.id} className="rounded-xl border border-border bg-surface-2 p-3">
               <div className="mb-2 flex items-center justify-between">
-                <p className="truncate text-sm font-semibold">{c.nome}</p>
+                <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold">
+                  <span>{c.icone || '💳'}</span>
+                  {c.nome}
+                </p>
                 <button
                   onClick={() => remover(c.id)}
                   aria-label="Remover"
@@ -90,20 +109,30 @@ export function CartoesCard({ className }: { className?: string }) {
                   {formatBRL(disp)}
                 </span>
               </p>
+              {(() => {
+                const atrelado = gastoMensalDoCartao(data, c.id)
+                const qtd = fixasDoCartao(data.saidasFixas, c.id).length + parcelasDoCartao(data.parcelas, c.id).length
+                if (qtd === 0) return null
+                return (
+                  <p className="mt-1 text-[11px] text-muted">
+                    🔗 {qtd} {qtd === 1 ? 'item atrelado' : 'itens atrelados'} ·{' '}
+                    <span className="tnum text-text">{formatBRL(atrelado)}/mês</span>
+                  </p>
+                )
+              })()}
             </li>
           )
         })}
       </ul>
 
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3">
-        <div className="col-span-2">
-          <Field
-            label="Nome do cartão"
-            placeholder="Nubank, Inter…"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </div>
+        <IconPicker value={icone} onChange={setIcone} />
+        <Field
+          label="Nome do cartão"
+          placeholder="Nubank, Inter…"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
         <MoneyInput label="Limite" value={limite} onValue={setLimite} />
         <MoneyInput label="Fatura atual" value={fatura} onValue={setFatura} />
         <Button onClick={add} disabled={!nome.trim()} className="col-span-2">
