@@ -18,6 +18,7 @@ import {
   statusDoSaldo,
 } from './finance'
 import { emptyData, type CartaoCredito, type Parcela, type SaidaFixa, type Transacao } from '../types'
+import { addMonths, currentMonth } from './date'
 
 const mkCartao = (over: Partial<CartaoCredito>): CartaoCredito => ({
   id: Math.random().toString(),
@@ -191,5 +192,18 @@ describe('finance — previsibilidade', () => {
   it('fica verde quando há folga', () => {
     const d = { ...emptyData(), saldoDebito: 10000, renda: { mensal: 5000 } }
     expect(projetarMeses(d, 1)[0].status).toBe('safe')
+  })
+
+  it('gera meses sequenciais e únicos (sem repetir por fuso)', () => {
+    const meses = projetarMeses(emptyData(), 6).map((m) => m.mes)
+    expect(new Set(meses).size).toBe(6)
+    expect(meses[0]).toBe(currentMonth())
+    expect(meses[1]).toBe(addMonths(currentMonth(), 1))
+  })
+
+  it('arredonda centavos no saldo projetado', () => {
+    const d = { ...emptyData(), saldoDebito: 0.1, renda: { mensal: 0.2 } }
+    // sem round2 daria 0.30000000000000004
+    expect(projetarMeses(d, 1)[0].saldoFim).toBe(0.3)
   })
 })
