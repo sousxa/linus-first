@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { type AppData, emptyData } from '../types'
 import { decodeSalt, decrypt, deriveKey, encrypt, randomSalt, type VaultBlob } from '../lib/vault'
+import { loadSyncConfig, saveSyncConfig, pushToGist } from '../lib/sync'
 
 const STORAGE_KEY = 'linus:vault'
 
@@ -42,17 +43,32 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const keyRef = useRef<CryptoKey | null>(null)
   const saltRef = useRef<Uint8Array | null>(null)
+  const syncTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     setStatus(loadBlob() ? 'locked' : 'first')
   }, [])
 
   // Persiste cifrado a cada mudança dos dados, reusando a chave já derivada (rápido).
+  // Se o sync na nuvem estiver conectado, faz auto-push do blob cifrado com debounce.
   useEffect(() => {
     if (status !== 'unlocked' || !data || !keyRef.current || !saltRef.current) return
     let cancelled = false
     encrypt(keyRef.current, saltRef.current, JSON.stringify(data)).then((blob) => {
-      if (!cancelled) localStorage.setItem(STORAGE_KEY, JSON.stringify(blob))
+      if (cancelled) return
+      const json = JSON.stringify(blob)
+      localStorage.setItem(STORAGE_KEY, json)
+      const cfg = loadSyncConfig()
+      if (cfg?.token && cfg.gistId) {
+        if (syncTimer.current) window.clearTimeout(syncTimer.current)
+        syncTimer.current = window.setTimeout(() => {
+          pushToGist(cfg.token, cfg.gistId, json)
+            .then(() => saveSyncConfig({ ...cfg, lastSync: Date.now() }))
+            .catch(() => {
+              /* offline / token: ignora; o usuário ainda pode enviar manualmente */
+            })
+        }, 2500)
+      }
     })
     return () => {
       cancelled = true
