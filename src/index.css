@@ -3,17 +3,16 @@
 @tailwind utilities;
 
 :root {
-  /* canais R G B pra permitir opacidade no Tailwind (bg-good/10 etc.) */
-  --bg: 11 15 23;
-  --surface: 19 26 38;
-  --surface-2: 27 36 51;
-  --border: 36 48 68;
-  --text: 231 237 246;
-  --muted: 138 153 175;
-  --primary: 79 140 255;
-  --green: 47 191 113;
-  --amber: 245 185 77;
-  --red: 255 93 108;
+  /* paleta preto/branco/verde (canais R G B pra permitir opacidade). vermelho só p/ alerta crítico */
+  --bg: 9 9 11;
+  --surface: 18 18 20;
+  --surface-2: 30 30 34;
+  --border: 42 42 48;
+  --text: 250 250 250;
+  --muted: 161 161 170;
+  --primary: 34 197 94; /* verde — único acento */
+  --green: 34 197 94;
+  --red: 239 68 68; /* exceção: só no "vai ficar no vermelho" */
 
   color-scheme: dark;
 }
@@ -26,14 +25,13 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(79, 140, 255, 0.12), transparent 60%),
-    radial-gradient(900px 500px at -10% 10%, rgba(47, 191, 113, 0.08), transparent 55%),
-    rgb(var(--bg));
+  /* flat: fundo sólido, sem glows/gradientes */
+  background: rgb(var(--bg));
   color: rgb(var(--text));
   font-family: 'Inter', system-ui, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'tnum' 1, 'cv01' 1;
+  overscroll-behavior: none;
 }
 
 .tnum {
@@ -43,4 +41,17 @@ body {
 :focus-visible {
   outline: 2px solid rgb(var(--primary));
   outline-offset: 2px;
+}
+
+/* scrollbars discretas pras áreas com scroll interno */
+.scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--border)) transparent;
+}
+.scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-area::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 9999px;
 }

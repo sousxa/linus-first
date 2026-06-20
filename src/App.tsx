@@ -7,24 +7,25 @@ import { VaultProvider, useVault } from './store/VaultContext'
 function Shell() {
   const { status, lock } = useVault()
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <Header
         right={
           status === 'unlocked' ? (
-            <Button variant="ghost" onClick={lock} aria-label="Travar">
+            <Button variant="ghost" onClick={lock} aria-label="Travar" className="px-2.5 py-1.5">
               🔒 Travar
             </Button>
           ) : undefined
         }
       />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-6">
-        {status === 'loading' && <p className="text-center text-muted">Carregando…</p>}
-        {(status === 'locked' || status === 'first') && <LockScreen />}
+      <main className="flex-1 overflow-hidden">
+        {status === 'loading' && <p className="p-6 text-center text-muted">Carregando…</p>}
+        {(status === 'locked' || status === 'first') && (
+          <div className="scroll-area h-full overflow-y-auto px-4">
+            <LockScreen />
+          </div>
+        )}
         {status === 'unlocked' && <Dashboard />}
       </main>
-      <footer className="border-t border-border py-4 text-center text-[11px] text-muted">
-        100% local e criptografado · sem servidor · feito pra você
-      </footer>
     </div>
   )
 }
