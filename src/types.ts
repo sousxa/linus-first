@@ -1,5 +1,10 @@
 // Modelo de dados do app. Tudo isto vive cifrado no localStorage.
 
+/** onde um gasto é cobrado: na conta (débito) ou num cartão de crédito */
+export type Conta =
+  | { contaTipo?: 'debito'; cartaoId?: undefined }
+  | { contaTipo: 'credito'; cartaoId: string }
+
 export interface SaidaFixa {
   id: string
   nome: string
@@ -7,6 +12,11 @@ export interface SaidaFixa {
   diaVencimento: number
   /** meses (YYYY-MM) em que esta saída já foi marcada como paga */
   pagasPorMes: string[]
+  /** emoji opcional */
+  icone?: string
+  /** onde é cobrada — débito (default) ou um cartão */
+  contaTipo?: 'debito' | 'credito'
+  cartaoId?: string
 }
 
 export interface Parcela {
@@ -17,6 +27,9 @@ export interface Parcela {
   parcelasPagas: number
   /** primeiro mês da parcela, YYYY-MM */
   mesInicio: string
+  icone?: string
+  contaTipo?: 'debito' | 'credito'
+  cartaoId?: string
 }
 
 export interface CartaoCredito {
@@ -25,6 +38,7 @@ export interface CartaoCredito {
   limite: number
   faturaAtual: number
   diaVencimento: number
+  icone?: string
 }
 
 export interface Transacao {
