@@ -1,4 +1,4 @@
-import type { Parcela, SaidaFixa } from '../types'
+import type { CartaoCredito, Parcela, SaidaFixa } from '../types'
 
 /** arredonda pra 2 casas evitando ruído de ponto flutuante */
 export function round2(n: number): number {
@@ -42,4 +42,21 @@ export function totalParcelasMensais(parcelas: Parcela[]): number {
   return round2(
     parcelas.filter((p) => !parcelaQuitada(p)).reduce((acc, p) => acc + p.valorParcela, 0),
   )
+}
+
+// --- Cartões de crédito ---
+
+/** crédito ainda disponível em um cartão (limite - fatura) */
+export function creditoDisponivel(c: CartaoCredito): number {
+  return round2(c.limite - c.faturaAtual)
+}
+
+/** soma das faturas atuais de todos os cartões */
+export function totalFaturas(cartoes: CartaoCredito[]): number {
+  return round2(cartoes.reduce((acc, c) => acc + c.faturaAtual, 0))
+}
+
+/** soma do crédito disponível em todos os cartões */
+export function totalCreditoDisponivel(cartoes: CartaoCredito[]): number {
+  return round2(cartoes.reduce((acc, c) => acc + creditoDisponivel(c), 0))
 }
