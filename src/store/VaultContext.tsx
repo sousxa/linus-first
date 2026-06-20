@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { type AppData, emptyData } from '../types'
+import { type AppData, emptyData, migrate } from '../types'
 import { decodeSalt, decrypt, deriveKey, encrypt, randomSalt, type VaultBlob } from '../lib/vault'
 import { loadSyncConfig, saveSyncConfig, pushToGist } from '../lib/sync'
 
@@ -22,6 +22,8 @@ interface VaultCtx {
   unlock: (password: string) => Promise<void>
   lock: () => void
   update: (updater: (d: AppData) => AppData) => void
+  /** troca a senha: re-deriva a chave (novo salt) e re-cifra os dados */
+  changePassword: (novaSenha: string) => Promise<void>
   /** apaga o cofre (esqueci a senha) — destrói os dados cifrados */
   reset: () => void
 }
@@ -85,7 +87,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         const json = await decrypt(key, blob) // lança se a senha estiver errada
         keyRef.current = key
         saltRef.current = salt
-        setData(JSON.parse(json) as AppData)
+        setData(migrate(JSON.parse(json)))
         setStatus('unlocked')
       } else {
         const salt = randomSalt()
@@ -113,6 +115,15 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setData((prev) => (prev ? updater(prev) : prev))
   }, [])
 
+  const changePassword = useCallback(async (novaSenha: string) => {
+    const salt = randomSalt()
+    const key = await deriveKey(novaSenha, salt)
+    keyRef.current = key
+    saltRef.current = salt
+    // dispara o efeito de persistência, que re-cifra com a nova chave/salt
+    setData((prev) => (prev ? { ...prev } : prev))
+  }, [])
+
   const reset = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
     keyRef.current = null
@@ -123,7 +134,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx.Provider value={{ status, data, error, unlock, lock, update, reset }}>
+    <Ctx.Provider value={{ status, data, error, unlock, lock, update, changePassword, reset }}>
       {children}
     </Ctx.Provider>
   )

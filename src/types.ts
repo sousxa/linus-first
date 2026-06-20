@@ -1,4 +1,5 @@
 // Modelo de dados do app. Tudo isto vive cifrado no localStorage.
+import { currentMonth } from './lib/date'
 
 /** onde um gasto é cobrado: na conta (débito) ou num cartão de crédito */
 export type Conta =
@@ -49,6 +50,20 @@ export interface Transacao {
   direcao: 'entrada' | 'saida'
   contaTipo: 'debito' | 'credito'
   cartaoId?: string
+  /** mês de competência (YYYY-MM) pra agrupar no fechamento */
+  mesRef?: string
+}
+
+/** resumo de um mês já fechado (histórico, só leitura) */
+export interface MesArquivado {
+  mes: string
+  fechadoEm: string // ISO
+  renda: number
+  fixasPagas: number
+  parcelas: number
+  entradas: number
+  saidas: number
+  saldoFinal: number
 }
 
 export interface AppData {
@@ -60,16 +75,32 @@ export interface AppData {
   parcelas: Parcela[]
   cartoes: CartaoCredito[]
   transacoes: Transacao[]
+  /** mês ativo de trabalho (YYYY-MM) */
+  mesAtual: string
+  /** meses fechados (histórico) */
+  arquivoMeses: MesArquivado[]
 }
 
 export function emptyData(): AppData {
   return {
-    versao: 1,
+    versao: 2,
     saldoDebito: 0,
     renda: { mensal: 0 },
     saidasFixas: [],
     parcelas: [],
     cartoes: [],
     transacoes: [],
+    mesAtual: currentMonth(),
+    arquivoMeses: [],
+  }
+}
+
+/** completa dados antigos com os campos novos (não quebra cofres já salvos) */
+export function migrate(d: Partial<AppData>): AppData {
+  return {
+    ...emptyData(),
+    ...d,
+    mesAtual: d.mesAtual ?? currentMonth(),
+    arquivoMeses: d.arquivoMeses ?? [],
   }
 }

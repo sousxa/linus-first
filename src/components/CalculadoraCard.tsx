@@ -37,6 +37,7 @@ export function CalculadoraCard({ className }: { className?: string }) {
       direcao,
       contaTipo: tipo,
       cartaoId: tipo === 'credito' ? cartaoId : undefined,
+      mesRef: data.mesAtual,
     }
     update((d) => {
       const nd = aplicarTransacao(d, t)
