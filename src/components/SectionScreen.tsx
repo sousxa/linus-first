@@ -6,6 +6,7 @@ import { ContaCard } from './ContaCard'
 import { SaidasFixasCard } from './SaidasFixasCard'
 import { ParcelasCard } from './ParcelasCard'
 import { CartoesCard } from './CartoesCard'
+import { ConfigScreen } from './ConfigScreen'
 
 /** conteúdo de uma seção (mobile), aberto a partir da home */
 export function SectionScreen({ view }: { view: View }) {
@@ -26,6 +27,7 @@ export function SectionScreen({ view }: { view: View }) {
           <CartoesCard />
         </>
       )}
+      {view === 'config' && <ConfigScreen />}
     </div>
   )
 }

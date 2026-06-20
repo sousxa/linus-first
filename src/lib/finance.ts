@@ -1,4 +1,4 @@
-import type { AppData, CartaoCredito, Parcela, SaidaFixa, Transacao } from '../types'
+import type { AppData, CartaoCredito, MesArquivado, Parcela, SaidaFixa, Transacao } from '../types'
 import { addMonths, currentMonth } from './date'
 
 /** arredonda pra 2 casas evitando ruído de ponto flutuante */
@@ -159,7 +159,7 @@ export function statusDoSaldo(saldoFim: number, renda: number): StatusMes {
  */
 export function projetarMeses(d: AppData, n = 6): MesProjecao[] {
   const fixasTotal = totalSaidasFixas(d.saidasFixas)
-  const base = currentMonth()
+  const base = d.mesAtual ?? currentMonth()
   const out: MesProjecao[] = []
   let saldo = d.saldoDebito
 
@@ -185,4 +185,40 @@ export function projetarMeses(d: AppData, n = 6): MesProjecao[] {
     })
   }
   return out
+}
+
+// --- Fechar mês (arquivo/histórico) ---
+
+/** resumo do mês informado, pra arquivar */
+export function resumoDoMes(d: AppData, mes: string): MesArquivado {
+  const fixasPagas = round2(
+    d.saidasFixas.filter((s) => fixaPaga(s, mes)).reduce((a, s) => a + s.valor, 0),
+  )
+  const parcelas = totalParcelasMensais(d.parcelas)
+  const txs = d.transacoes.filter((t) => (t.mesRef ?? mes) === mes)
+  const entradas = round2(
+    txs.filter((t) => t.direcao === 'entrada').reduce((a, t) => a + t.valor, 0),
+  )
+  const saidas = round2(txs.filter((t) => t.direcao === 'saida').reduce((a, t) => a + t.valor, 0))
+  return {
+    mes,
+    fechadoEm: new Date().toISOString(),
+    renda: d.renda.mensal,
+    fixasPagas,
+    parcelas,
+    entradas,
+    saidas,
+    saldoFinal: d.saldoDebito,
+  }
+}
+
+/** fecha o mês ativo: arquiva o resumo e avança pro próximo mês */
+export function fecharMes(d: AppData): AppData {
+  const mes = d.mesAtual ?? currentMonth()
+  const resumo = resumoDoMes(d, mes)
+  return {
+    ...d,
+    arquivoMeses: [resumo, ...d.arquivoMeses],
+    mesAtual: addMonths(mes, 1),
+  }
 }

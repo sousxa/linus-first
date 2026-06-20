@@ -19,6 +19,8 @@ import {
   reverterTransacao,
   projetarMeses,
   statusDoSaldo,
+  resumoDoMes,
+  fecharMes,
 } from './finance'
 import { emptyData, type CartaoCredito, type Parcela, type SaidaFixa, type Transacao } from '../types'
 import { addMonths, currentMonth } from './date'
@@ -234,5 +236,37 @@ describe('finance — previsibilidade', () => {
     const d = { ...emptyData(), saldoDebito: 0.1, renda: { mensal: 0.2 } }
     // sem round2 daria 0.30000000000000004
     expect(projetarMeses(d, 1)[0].saldoFim).toBe(0.3)
+  })
+
+  it('projeta a partir do mesAtual', () => {
+    const d = { ...emptyData(), mesAtual: '2026-06' }
+    expect(projetarMeses(d, 3).map((m) => m.mes)).toEqual(['2026-06', '2026-07', '2026-08'])
+  })
+})
+
+describe('finance — fechar mês', () => {
+  it('resumo do mês soma renda, fixas pagas e lançamentos do mês', () => {
+    const d = {
+      ...emptyData(),
+      mesAtual: '2026-06',
+      saldoDebito: 1500,
+      renda: { mensal: 5000 },
+      saidasFixas: [mk({ valor: 100, pagasPorMes: ['2026-06'] }), mk({ valor: 50 })],
+      transacoes: [
+        { id: '1', data: '2026-06-02', descricao: 'x', valor: 200, direcao: 'entrada', contaTipo: 'debito', mesRef: '2026-06' },
+        { id: '2', data: '2026-06-03', descricao: 'y', valor: 80, direcao: 'saida', contaTipo: 'debito', mesRef: '2026-06' },
+        { id: '3', data: '2026-07-01', descricao: 'z', valor: 999, direcao: 'saida', contaTipo: 'debito', mesRef: '2026-07' },
+      ] as Transacao[],
+    }
+    const r = resumoDoMes(d, '2026-06')
+    expect(r).toMatchObject({ mes: '2026-06', renda: 5000, fixasPagas: 100, entradas: 200, saidas: 80, saldoFinal: 1500 })
+  })
+
+  it('fecharMes arquiva o resumo e avança o mês', () => {
+    const d = { ...emptyData(), mesAtual: '2026-06', renda: { mensal: 3000 } }
+    const novo = fecharMes(d)
+    expect(novo.mesAtual).toBe('2026-07')
+    expect(novo.arquivoMeses).toHaveLength(1)
+    expect(novo.arquivoMeses[0].mes).toBe('2026-06')
   })
 })

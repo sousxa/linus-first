@@ -18,7 +18,7 @@ import { totalSaidasFixas, totalFixasPendentes, fixaPaga } from '../lib/finance'
 
 export function SaidasFixasCard({ className }: { className?: string }) {
   const { data, update } = useData()
-  const mes = currentMonth()
+  const mes = data.mesAtual ?? currentMonth()
   const [open, setOpen] = useState(false)
 
   function togglePago(id: string) {
