@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b0f17;
+  --surface: #131a26;
+  --surface-2: #1b2433;
+  --border: #243044;
+  --text: #e7edf6;
+  --muted: #8a99af;
+  --primary: #4f8cff;
+  --green: #2fbf71;
+  --amber: #f5b94d;
+  --red: #ff5d6c;
+
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(79, 140, 255, 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(47, 191, 113, 0.08), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* números financeiros alinhados */
+  font-feature-settings: 'tnum' 1, 'cv01' 1;
+}
+
+/* utilitário pra números monetários */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* foco visível e acessível */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
