@@ -153,9 +153,9 @@ export function projetarMeses(d: AppData, n = 6): MesProjecao[] {
       0,
     )
     const faturas = i === 0 ? totalFaturas(d.cartoes) : 0
-    const saidas = fixas + parcelas + faturas
+    const saidas = round2(fixas + parcelas + faturas)
     const saldoInicio = saldo
-    saldo = saldoInicio + entradas - saidas
+    saldo = round2(saldoInicio + entradas - saidas)
     out.push({
       mes,
       entradas,
